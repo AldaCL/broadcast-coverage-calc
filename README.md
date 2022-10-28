@@ -1,2 +1,2 @@
-# broadcast-coverage-calc
-Calculation of popularion coverage of Broadcasting stations based on their shp polygons
+# Script "Cálculo de puntos sobre polígonos con GeoPandas" 
+
