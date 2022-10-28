@@ -134,3 +134,8 @@ binarys/
 ./results/*
 ./datos/datasets/*
 ./datos/coberturas/*
+
+maps/*
+results/*
+datos/datasets/*
+datos/coberturas/*
