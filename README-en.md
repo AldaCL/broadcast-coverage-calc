@@ -58,4 +58,6 @@ Lo cual generará 3 archivos principales como resultado en los folders **maps/TE
 
 - ***maps/TEST1.html*** Dónde vive la visutalización de datos en el mapa base de la républica Mexicana, realizada con Bokeh.
 
+
+
 If you get any issues feel free of contact me at: aldair.alda27@gmail.com

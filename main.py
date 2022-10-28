@@ -17,7 +17,7 @@ def main():
     calculo_poblacion.run(args,dataset_filename,shp_filename,report_filename)
     
     if args.map :
-        data_visualization.generate()
+        data_visualization.generate(shp_filename,args.nombre_destino)
     else:
         pass
 

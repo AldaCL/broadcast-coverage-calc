@@ -5,9 +5,9 @@ from bokeh.models import ColumnDataSource, GeoJSONDataSource
 import pandas as pd
 import geopandas as gpd
 
-def generate():
+def generate(shp_filename,nombre_destino):
     base_map = r"./datos/datasets/INEGI_2010/estatal.shp"
-    population_dots = r"./results/map01.shp"
+    population_dots = shp_filename
 
     points_gdf = gpd.read_file(population_dots)
     print(points_gdf.head)
@@ -40,7 +40,8 @@ def generate():
     # Add the points to the map from our 'psource' ColumnDataSource -object
     p.circle('LONGITUD', 'LATITUD', source=psource, color='red', size=3)
 
-    outmap_route = r"./maps/map02.html"
+    outmap_route = "./maps/"+nombre_destino+".html"
+    
     save(obj=p, filename=outmap_route, title='Localidades dentro de Cobertura')
 
     
