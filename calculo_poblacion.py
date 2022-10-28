@@ -1,17 +1,21 @@
 from shapely.geometry import Point, Polygon, mapping
+import matplotlib.pyplot as plt
 import argparse
 import glob
 import os
 import pandas as pd
 import geopandas as gpd
+from shapely import wkt
+import openpyxl
+import os
 
 
 parser = argparse.ArgumentParser(description='Calcula la extension territorial y poblacion total de un grupo de coberturas .shp dentro del territorio nacional')
-# Required positional argument
+# Optional positional argument
 parser.add_argument('--folder', type=str,
                     help='Nombre de la carpeta que contiene los poligonos .shp',  default='./datos/coberturas/')
 
-# Optional argument
+# Required argument
 parser.add_argument('--nombre_destino', type=str,
                     help='Nombre de los archivos que se generaran: Todos los archivos resultado tendran este nombre como prefijo', required= True)
 
@@ -21,7 +25,7 @@ parser.add_argument('--map', action='store_true',
 
 args = parser.parse_args()
 
-#importamos los puntos de poblacion
+#Importamos los puntos de poblacion
 inegi_path='./Localidades_20100_semicolon.csv'
 inegi_data = pd.read_csv(inegi_path,header=0, delimiter = ";", encoding = 'latin-1')
 #Importamos los shp de cobertura
@@ -30,39 +34,56 @@ coberturas_dir = args.folder #Local path, you can change it to mkae it matc your
 coberturas_dir_list = glob.glob(os.path.join(coberturas_dir, '*.shp'))
 print("Archivos de cobertura incluidos: ", len(coberturas_dir_list))
 
+
+# datos para almacenar resultados
+folder_name = './results/' + args.nombre_destino + '/'
+if not os.path.exists(folder_name):
+   os.makedirs(folder_name)
+   
+dataset_filename = folder_name + args.nombre_destino + '_dataset.xlsx'
+shp_filename =  folder_name + args.nombre_destino + '_localidades.shp'
+report_filename = folder_name + args.nombre_destino + 'report.csv'
+
+
 gdf_base = gpd.GeoDataFrame(
     inegi_data, geometry=gpd.points_from_xy(inegi_data.LONGITUD, inegi_data.LATITUD))
 
 gdf_base.set_crs(epsg=4326, inplace=True)
 
-localidades_incluidas = []
-
-localidades_incluidas_series = pd.Series
-
-print(args.nombre_destino)
+localidades_incluidas = set()
 
 for cobertura in coberturas_dir_list:
     cobertura_shp= gpd.read_file(cobertura)
     points_within = gpd.sjoin(gdf_base,cobertura_shp, predicate='within')
     print("Procesada estacion: ", cobertura)
     
-    localidades_incluidas_series.concat(points_within['_ID'])
+    localidades_incluidas.update(points_within["_ID"].to_list())
     
-    # for i in points_within.index:
-    #     localidades_incluidas.append(points_within["_ID"][i])
-    
-localidades_incluidas_series = localidades_incluidas_series.unique()
-# resultado = set(localidades_incluidas)
-print(localidades_incluidas_series)
-print(localidades_incluidas_series.shape)
-# cobertura_1 = gpd.read_file(coberturas_dir_list[0])
+# print(localidades_incluidas)
+print(len(localidades_incluidas), " Localidades incluidas en el grupo ", args.nombre_destino)
+localidades_incluidas_df = pd.DataFrame(list(localidades_incluidas),columns = ['_ID']) 
 
-# print(gdf.head())
-# print(gdf.shape)
-# print(cobertura_1)
+result_coverage = pd.merge(localidades_incluidas_df,inegi_data, on='_ID', how='left')
+print(result_coverage)
 
+writer = pd.ExcelWriter((dataset_filename),engine='openpyxl')
+result_coverage.to_excel(writer,index = True, header=True)
+writer.save()
 
-# print(points_within)
-# print(points_within.shape)
+# Geopandas GeoDataFrame
+result_coverage_shp = gpd.GeoDataFrame(result_coverage, geometry='geometry')
+#Export to shapefile
+result_coverage_shp.to_file(shp_filename)
 
-# points_within.to_file('./results/map01.shp')
+extension_territorial =  result_coverage['SUPERFICIE'].sum(axis=0)
+print("Extension territorial de las localidades incluidas: ", extension_territorial, " km^2")
+
+results = {'Nombre del grupo: ': args.nombre_destino,'Numero de localidades: ': len(coberturas_dir_list),'Extensión territorial: ':extension_territorial}
+##Guardamos resultados
+def write_results():
+    with open(report_filename, 'w') as f:
+        for key in results.keys():
+            f.write("%s, %s\n" % (key, results[key]))
+            
+write_results()
+print ('Listo')
